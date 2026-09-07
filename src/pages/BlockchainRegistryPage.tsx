@@ -47,6 +47,9 @@ export const BlockchainRegistryPage: React.FC<BlockchainRegistryPageProps> = ({
     r.transactionHash.toLowerCase().includes(searchFilter.toLowerCase())
   );
 
+  const isDemoReference = (reference: string) =>
+    reference.includes('demo.faceproof.local') || reference.includes('globalnewswire.press');
+
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
       {/* Page Header */}
@@ -189,14 +192,26 @@ export const BlockchainRegistryPage: React.FC<BlockchainRegistryPageProps> = ({
                     </td>
 
                     <td className="py-3.5 px-4 max-w-xs truncate text-slate-400">
-                      <a
-                        href={record.sourceReference}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:text-cyan-300 truncate block"
-                      >
-                        {record.sourceReference}
-                      </a>
+                      {isDemoReference(record.sourceReference) ? (
+                        <a
+                          href={`https://www.google.com/search?q=${encodeURIComponent(record.sourceReference)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="truncate block text-amber-400 hover:text-amber-300"
+                          title="Search this demo reference on the web"
+                        >
+                          {record.sourceReference} (demo reference)
+                        </a>
+                      ) : (
+                        <a
+                          href={record.sourceReference}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-cyan-300 truncate block"
+                        >
+                          {record.sourceReference}
+                        </a>
+                      )}
                     </td>
 
                     <td className="py-3.5 px-4 whitespace-nowrap">
