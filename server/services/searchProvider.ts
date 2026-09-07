@@ -3,10 +3,12 @@ import { SearchCandidate } from '../types.js';
 import { FaceEmbeddingService } from './faceEmbedding.js';
 
 export interface SearchProviderResult {
-  mode: 'LIVE' | 'DEMO';
+  mode: 'LIVE';
   providerName: string;
   queryTimeMs: number;
-  imageId?: string;
+  searchId?: string;
+  searchTimestamp: string;
+  responseMetadata?: Record<string, unknown>;
   candidates: SearchCandidate[];
 }
 
@@ -37,7 +39,7 @@ export class LiveSearchProvider {
     const apiKey = this.getApiKey();
 
     if (!apiKey) {
-      return createDemoSearchResult(startTime);
+      throw new Error('SERPAPI_API_KEY is not configured. Configure a live search provider before starting an investigation.');
     }
 
     // ========================================================
@@ -102,7 +104,9 @@ export class LiveSearchProvider {
         mode: 'LIVE',
         providerName: 'Google Lens via SerpApi',
         queryTimeMs: Date.now() - startTime,
-        imageId,
+        searchId: imageId,
+        searchTimestamp: new Date().toISOString(),
+        responseMetadata: sanitizeResponseMetadata(searchData),
         candidates: []
       };
     }
@@ -121,8 +125,9 @@ export class LiveSearchProvider {
       const sourceDomain = extractDomain(canonicalUrl);
 
       // Compute biometric similarity using real InsightFace if thumbnail is fetchable & subject embedding available
-      let calculatedFaceSim = 0.70;
-      let calculatedImageSim = Math.max(0.60, 0.95 - idx * 0.05);
+      let calculatedFaceSim: number | null = null;
+      let calculatedImageSim: number | null = null;
+      let candidateStatus: SearchCandidate['candidateStatus'] = 'IMAGE_UNAVAILABLE';
 
       if (subjectEmbedding && thumbnail && thumbnail.startsWith('http')) {
         try {
@@ -136,32 +141,30 @@ export class LiveSearchProvider {
             );
             if (compareResult.faceDetected && compareResult.cosineSimilarity > 0) {
               calculatedFaceSim = compareResult.cosineSimilarity;
-            } else {
-              // No face detected in thumbnail or thumbnail is icon/graphic
-              calculatedFaceSim = Math.max(0.45, 0.88 - idx * 0.06);
+              candidateStatus = 'ANALYZED';
             }
           }
         } catch {
-          calculatedFaceSim = Math.max(0.50, 0.88 - idx * 0.06);
+          candidateStatus = 'ANALYSIS_FAILED';
         }
-      } else {
-        calculatedFaceSim = Math.max(0.50, 0.90 - idx * 0.05);
       }
 
-      // Metadata & Source Signal scoring
-      const sourceSignalScore = getDomainTrustScore(sourceDomain);
-      const metadataScore = link ? 0.90 : 0.60;
+      const imageSimilarity = null;
+      const metadataScore = null;
+      const sourceSignalScore = null;
+      const finalScore = calculateTrustScore({
+        faceSimilarity: calculatedFaceSim,
+        imageSimilarity,
+        metadataScore,
+        sourceSignalScore
+      });
 
-      // Composite weighted score: 45% face, 30% image, 15% metadata, 10% source trust
-      const finalScore = Number(
-        (0.45 * calculatedFaceSim + 0.30 * calculatedImageSim + 0.15 * metadataScore + 0.10 * sourceSignalScore).toFixed(3)
-      );
-
-      let confidenceLabel: 'HIGH' | 'POTENTIAL' | 'LOW' | 'NO_MATCH' = 'POTENTIAL';
-      if (finalScore >= 0.82) confidenceLabel = 'HIGH';
-      else if (finalScore >= 0.65) confidenceLabel = 'POTENTIAL';
-      else if (finalScore >= 0.45) confidenceLabel = 'LOW';
-      else confidenceLabel = 'NO_MATCH';
+      const confidenceLabel: SearchCandidate['confidenceLabel'] = finalScore === null
+        ? 'NO_MATCH'
+        : finalScore >= 0.82 ? 'HIGH'
+        : finalScore >= 0.65 ? 'POTENTIAL'
+        : finalScore >= 0.45 ? 'LOW'
+        : 'NO_MATCH';
 
       candidates.push({
         id: `cand_lens_${Date.now()}_${idx + 1}`,
@@ -188,17 +191,25 @@ export class LiveSearchProvider {
         },
         scoringRationale: [
           `Visual match confirmed from Google Lens reverse index for image_id: ${imageId.slice(0, 10)}...`,
-          `Computed face similarity: ${(calculatedFaceSim * 100).toFixed(1)}% against primary 512-D vector`,
-          `Domain trust index: ${(sourceSignalScore * 100).toFixed(0)}% (${sourceDomain})`
+          ...(calculatedFaceSim !== null ? [`Computed face similarity: ${(calculatedFaceSim * 100).toFixed(1)}% against primary 512-D vector`] : ['Candidate face comparison was unavailable.']),
+          ...(sourceDomain ? [`Source URL available: ${sourceDomain}`] : ['Source signal was unavailable.'])
         ]
       });
+      candidates[candidates.length - 1].candidateStatus = candidateStatus;
     }
+
+    candidates.sort((left, right) => (right.finalScore ?? -1) - (left.finalScore ?? -1));
+    candidates.forEach((candidate, index) => {
+      candidate.ranking = index + 1;
+    });
 
     return {
       mode: 'LIVE',
       providerName: 'Google Lens via SerpApi',
       queryTimeMs: Date.now() - startTime,
-      imageId,
+      searchId: imageId,
+      searchTimestamp: new Date().toISOString(),
+      responseMetadata: sanitizeResponseMetadata(searchData),
       candidates
     };
   }
@@ -227,46 +238,26 @@ function extractDomain(url: string): string {
   }
 }
 
-function getDomainTrustScore(domain: string): number {
-  const highTrust = ['gov', 'edu', 'org', 'reuters.com', 'apnews.com', 'bloomberg.com', 'bbc.com', 'nature.com', 'ieee.org', 'arxiv.org', 'github.com', 'linkedin.com', 'wikipedia.org'];
-  const lower = domain.toLowerCase();
-  for (const t of highTrust) {
-    if (lower.endsWith(t) || lower.includes(t)) return 0.95;
-  }
-  return 0.80;
+function calculateTrustScore(signals: Record<string, number | null>): number | null {
+  if (signals.faceSimilarity === null) return null;
+
+  const weights: Record<string, number> = {
+    faceSimilarity: 0.45,
+    imageSimilarity: 0.30,
+    metadataScore: 0.15,
+    sourceSignalScore: 0.10
+  };
+  const available = Object.entries(signals).filter(([, value]) => value !== null);
+  if (!available.length) return null;
+  const weightTotal = available.reduce((total, [key]) => total + weights[key], 0);
+  return Number((available.reduce((total, [key, value]) => total + (value as number) * weights[key], 0) / weightTotal).toFixed(3));
 }
 
-function createDemoSearchResult(startTime: number): SearchProviderResult {
-  const canonicalUrl = 'https://demo.faceproof.local/evidence/reference-subject';
+function sanitizeResponseMetadata(response: any): Record<string, unknown> {
   return {
-    mode: 'DEMO',
-    providerName: 'FaceProof Local Demo Corpus (SerpApi key not configured)',
-    queryTimeMs: Date.now() - startTime,
-    candidates: [{
-      id: `cand_demo_${Date.now()}`,
-      investigationId: '',
-      url: canonicalUrl,
-      canonicalUrl,
-      source: 'FaceProof Local Demo Corpus',
-      title: 'Demo Reference Evidence Candidate',
-      snippet: 'Synthetic candidate used to demonstrate the investigation and verification workflow.',
-      imageUrl: '',
-      timestamp: new Date().toISOString(),
-      faceSimilarity: 0.91,
-      imageSimilarity: 0.88,
-      metadataScore: 0.82,
-      sourceSignalScore: 0.75,
-      finalScore: 0.866,
-      confidenceLabel: 'HIGH',
-      ranking: 1,
-      metadata: {
-        mode: 'DEMO',
-        verifiedProvider: 'FaceProof Local Demo Corpus'
-      },
-      scoringRationale: [
-        'Synthetic local candidate; no external reverse-image search was performed.',
-        'Scores demonstrate the multi-signal ranking workflow only.'
-      ]
-    }]
+    searchMetadata: response?.search_metadata || null,
+    searchParameters: response?.search_parameters || null,
+    visualMatchCount: Array.isArray(response?.visual_matches) ? response.visual_matches.length : 0,
+    exactMatchCount: Array.isArray(response?.exact_matches) ? response.exact_matches.length : 0
   };
 }

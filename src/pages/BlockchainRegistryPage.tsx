@@ -70,7 +70,7 @@ export const BlockchainRegistryPage: React.FC<BlockchainRegistryPageProps> = ({
         <div className="p-4 rounded-2xl bg-[#080D1F]/90 border border-blue-900/40 space-y-1">
           <div className="text-[10px] text-slate-400 uppercase">EVM Network</div>
           <div className="text-sm font-bold text-cyan-300 truncate">
-            {networkInfo?.network || 'Ethereum Sepolia'}
+            {networkInfo?.network || 'Not configured'}
           </div>
           <div className="text-[10px] text-emerald-400 flex items-center gap-1 mt-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
@@ -81,7 +81,7 @@ export const BlockchainRegistryPage: React.FC<BlockchainRegistryPageProps> = ({
         <div className="p-4 rounded-2xl bg-[#080D1F]/90 border border-blue-900/40 space-y-1">
           <div className="text-[10px] text-slate-400 uppercase">Latest Block Height</div>
           <div className="text-base font-bold text-white">
-            #{networkInfo?.latestBlock || 1948270}
+            {networkInfo?.latestBlock ? `#${networkInfo.latestBlock}` : 'Not available'}
           </div>
           <div className="text-[10px] text-slate-500">
             Avg Block Time: 2.1s
@@ -91,7 +91,7 @@ export const BlockchainRegistryPage: React.FC<BlockchainRegistryPageProps> = ({
         <div className="p-4 rounded-2xl bg-[#080D1F]/90 border border-blue-900/40 space-y-1">
           <div className="text-[10px] text-slate-400 uppercase">Evidence Registry Contract</div>
           <div className="text-xs font-bold text-slate-300 truncate">
-            {networkInfo?.contract || '0x5FbDB2315678afecb367f032d93F642f64180aa3'}
+            {networkInfo?.contract || 'Not configured'}
           </div>
           <div className="text-[10px] text-blue-400">
             EvidenceRegistry.sol

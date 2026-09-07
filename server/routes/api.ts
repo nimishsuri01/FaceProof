@@ -228,7 +228,7 @@ export function createApiRouter(): Router {
       timeLabel: `${new Date().toTimeString().split(' ')[0]} UTC`,
       stage: 'Web Discovery',
       status: 'completed',
-      description: `Google Lens search completed with image_id: ${searchRes.imageId || 'n/a'}. Discovered ${candidates.length} visual matches.`,
+      description: `Google Lens search completed with search ID: ${searchRes.searchId || 'n/a'}. Discovered ${candidates.length} visual matches.`,
       durationMs: searchRes.queryTimeMs
     });
 
@@ -252,8 +252,11 @@ export function createApiRouter(): Router {
       createdAt: now.toISOString(),
       status: candidates.length > 0 ? 'searched' : 'analyzing',
       faceAnalysis: analysis,
-      searchMode: 'LIVE',
+      searchMode: searchRes.mode,
       searchProviderName: searchRes.providerName,
+      searchId: searchRes.searchId,
+      searchTimestamp: searchRes.searchTimestamp,
+      searchResponseMetadata: searchRes.responseMetadata,
       candidates,
       timeline
     };
@@ -327,6 +330,9 @@ export function createApiRouter(): Router {
 
       const candidate = inv.candidates.find((c) => c.id === candidateId);
       if (!candidate) return sendError(res, 404, 'NOT_FOUND', 'Candidate not found.');
+      if (candidate.finalScore === null || candidate.confidenceLabel === 'NO_MATCH') {
+        return sendError(res, 422, 'NO_RELIABLE_MATCH', 'This candidate does not have a successful face comparison and cannot be registered as evidence.');
+      }
 
       const contentHash = crypto
         .createHash('sha256')

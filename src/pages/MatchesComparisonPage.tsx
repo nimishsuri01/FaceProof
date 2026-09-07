@@ -25,6 +25,8 @@ export const MatchesComparisonPage: React.FC<MatchesComparisonPageProps> = ({
   onSelectAsEvidence,
   setActiveTab
 }) => {
+  const formatScore = (value: number | null) => value === null ? 'Not available' : `${(value * 100).toFixed(1)}%`;
+
   if (!currentInvestigation || !currentInvestigation.candidates?.length) {
     return (
       <div className="rounded-3xl border border-blue-900/30 bg-[#080D1F]/80 p-12 text-center space-y-4 max-w-xl mx-auto my-12">
@@ -79,7 +81,7 @@ export const MatchesComparisonPage: React.FC<MatchesComparisonPageProps> = ({
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                #{cand.ranking} ({(cand.faceSimilarity * 100).toFixed(0)}%)
+                #{cand.ranking} ({formatScore(cand.faceSimilarity)})
               </button>
             ))}
           </div>
@@ -130,16 +132,22 @@ export const MatchesComparisonPage: React.FC<MatchesComparisonPageProps> = ({
               Discovered Web Candidate #{selectedCandidate.ranking}
             </span>
             <span className="text-xs font-mono font-bold text-emerald-400">
-              {(selectedCandidate.faceSimilarity * 100).toFixed(1)}% Match
+              {formatScore(selectedCandidate.faceSimilarity)} Match
             </span>
           </div>
 
-          <FaceLandmarkOverlay
-            imageSrc={selectedCandidate.imageUrl}
-            landmarks={selectedCandidate.landmarks || currentInvestigation.faceAnalysis.landmarks}
-            label="WEB DISCOVERY"
-            confidence={selectedCandidate.faceSimilarity}
-          />
+          {selectedCandidate.imageUrl ? (
+            <FaceLandmarkOverlay
+              imageSrc={selectedCandidate.imageUrl}
+              landmarks={selectedCandidate.landmarks || currentInvestigation.faceAnalysis.landmarks}
+              label="WEB DISCOVERY"
+              confidence={selectedCandidate.faceSimilarity || 0}
+            />
+          ) : (
+            <div className="aspect-square rounded-2xl border border-dashed border-blue-900/40 bg-[#050816] flex items-center justify-center text-xs font-mono text-slate-500 text-center px-6">
+              Candidate image unavailable for visual comparison.
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-2 font-mono text-center text-xs">
             <div className="p-2.5 rounded-xl bg-[#050816] border border-blue-900/30">
@@ -148,7 +156,7 @@ export const MatchesComparisonPage: React.FC<MatchesComparisonPageProps> = ({
             </div>
             <div className="p-2.5 rounded-xl bg-[#050816] border border-blue-900/30">
               <div className="text-[10px] text-slate-400">Image Struct</div>
-              <div className="font-bold text-blue-300 mt-0.5">{(selectedCandidate.imageSimilarity * 100).toFixed(1)}%</div>
+              <div className="font-bold text-blue-300 mt-0.5">{formatScore(selectedCandidate.imageSimilarity)}</div>
             </div>
             <div className="p-2.5 rounded-xl bg-[#050816] border border-blue-900/30">
               <div className="text-[10px] text-slate-400">Confidence</div>
@@ -171,9 +179,9 @@ export const MatchesComparisonPage: React.FC<MatchesComparisonPageProps> = ({
             </p>
           </div>
           <div className="text-right">
-            <div className="text-xs font-mono text-slate-400">Composite Score</div>
+            <div className="text-xs font-mono text-slate-400">Evidence Trust Score</div>
             <div className="text-xl font-mono font-bold text-emerald-400">
-              {(selectedCandidate.finalScore * 100).toFixed(1)}% ({selectedCandidate.confidenceLabel})
+              {formatScore(selectedCandidate.finalScore)} ({selectedCandidate.confidenceLabel})
             </div>
           </div>
         </div>
@@ -184,12 +192,12 @@ export const MatchesComparisonPage: React.FC<MatchesComparisonPageProps> = ({
           <div className="p-4 rounded-2xl bg-[#050816] border border-blue-900/30 space-y-2">
             <div className="flex justify-between text-slate-300 text-[11px]">
               <span>FACE SIMILARITY (Cosine Vector Distance • Weight 45%)</span>
-              <span className="text-cyan-300 font-bold">{(selectedCandidate.faceSimilarity * 100).toFixed(1)}%</span>
+              <span className="text-cyan-300 font-bold">{formatScore(selectedCandidate.faceSimilarity)}</span>
             </div>
             <div className="w-full h-2.5 rounded-full bg-slate-900 overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-blue-600 to-cyan-400 transition-all duration-700"
-                style={{ width: `${selectedCandidate.faceSimilarity * 100}%` }}
+                style={{ width: `${(selectedCandidate.faceSimilarity || 0) * 100}%` }}
               />
             </div>
           </div>
@@ -198,12 +206,12 @@ export const MatchesComparisonPage: React.FC<MatchesComparisonPageProps> = ({
           <div className="p-4 rounded-2xl bg-[#050816] border border-blue-900/30 space-y-2">
             <div className="flex justify-between text-slate-300 text-[11px]">
               <span>IMAGE SIMILARITY (Structural Histogram • Weight 30%)</span>
-              <span className="text-blue-300 font-bold">{(selectedCandidate.imageSimilarity * 100).toFixed(1)}%</span>
+              <span className="text-blue-300 font-bold">{formatScore(selectedCandidate.imageSimilarity)}</span>
             </div>
             <div className="w-full h-2.5 rounded-full bg-slate-900 overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-blue-700 to-blue-400 transition-all duration-700"
-                style={{ width: `${selectedCandidate.imageSimilarity * 100}%` }}
+                style={{ width: `${(selectedCandidate.imageSimilarity || 0) * 100}%` }}
               />
             </div>
           </div>
@@ -212,12 +220,12 @@ export const MatchesComparisonPage: React.FC<MatchesComparisonPageProps> = ({
           <div className="p-4 rounded-2xl bg-[#050816] border border-blue-900/30 space-y-2">
             <div className="flex justify-between text-slate-300 text-[11px]">
               <span>METADATA CONSISTENCY (Headers & Timestamp • Weight 15%)</span>
-              <span className="text-amber-300 font-bold">{(selectedCandidate.metadataScore * 100).toFixed(1)}%</span>
+              <span className="text-amber-300 font-bold">{formatScore(selectedCandidate.metadataScore)}</span>
             </div>
             <div className="w-full h-2.5 rounded-full bg-slate-900 overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-amber-600 to-amber-400 transition-all duration-700"
-                style={{ width: `${selectedCandidate.metadataScore * 100}%` }}
+                style={{ width: `${(selectedCandidate.metadataScore || 0) * 100}%` }}
               />
             </div>
           </div>
@@ -226,12 +234,12 @@ export const MatchesComparisonPage: React.FC<MatchesComparisonPageProps> = ({
           <div className="p-4 rounded-2xl bg-[#050816] border border-blue-900/30 space-y-2">
             <div className="flex justify-between text-slate-300 text-[11px]">
               <span>SOURCE CREDIBILITY (Platform Trust Score • Weight 10%)</span>
-              <span className="text-purple-300 font-bold">{(selectedCandidate.sourceSignalScore * 100).toFixed(1)}%</span>
+              <span className="text-purple-300 font-bold">{formatScore(selectedCandidate.sourceSignalScore)}</span>
             </div>
             <div className="w-full h-2.5 rounded-full bg-slate-900 overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-purple-600 to-purple-400 transition-all duration-700"
-                style={{ width: `${selectedCandidate.sourceSignalScore * 100}%` }}
+                style={{ width: `${(selectedCandidate.sourceSignalScore || 0) * 100}%` }}
               />
             </div>
           </div>

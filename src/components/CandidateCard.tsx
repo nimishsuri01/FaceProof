@@ -27,6 +27,8 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
   onCompare,
   onSelectEvidence
 }) => {
+  const formatScore = (value: number | null) => value === null ? 'Not available' : `${(value * 100).toFixed(1)}%`;
+  const canSelectEvidence = candidate.finalScore !== null && candidate.confidenceLabel !== 'NO_MATCH';
   const getBadgeStyle = (label: SearchCandidate['confidenceLabel']) => {
     switch (label) {
       case 'HIGH':
@@ -80,15 +82,21 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
         <div className="p-4 flex flex-col sm:flex-row gap-4">
           {/* Candidate Image preview */}
           <div className="relative w-full sm:w-36 h-36 shrink-0 rounded-xl overflow-hidden bg-slate-950 border border-blue-900/50">
-            <img
-              src={candidate.imageUrl}
-              alt={candidate.title}
-              referrerPolicy="no-referrer"
-              className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
-            />
+            {candidate.imageUrl ? (
+              <img
+                src={candidate.imageUrl}
+                alt={candidate.title}
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-center px-3 text-[10px] font-mono text-slate-500">
+                Candidate image unavailable
+              </div>
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             <span className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded bg-black/80 font-mono text-[9px] text-cyan-300">
-              {(candidate.faceSimilarity * 100).toFixed(1)}% SIMILAR
+              {formatScore(candidate.faceSimilarity)} FACE
             </span>
           </div>
 
@@ -124,19 +132,19 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
           <div className="p-2 rounded-lg bg-blue-950/20 border border-blue-900/30">
             <div className="text-[10px] font-mono text-slate-400 uppercase">Face Similarity</div>
             <div className="text-sm font-mono font-bold text-cyan-300 mt-0.5">
-              {(candidate.faceSimilarity * 100).toFixed(1)}%
+              {formatScore(candidate.faceSimilarity)}
             </div>
           </div>
           <div className="p-2 rounded-lg bg-blue-950/20 border border-blue-900/30">
             <div className="text-[10px] font-mono text-slate-400 uppercase">Image Struct</div>
             <div className="text-sm font-mono font-bold text-blue-300 mt-0.5">
-              {(candidate.imageSimilarity * 100).toFixed(1)}%
+              {formatScore(candidate.imageSimilarity)}
             </div>
           </div>
           <div className="p-2 rounded-lg bg-blue-950/20 border border-blue-900/30">
-            <div className="text-[10px] font-mono text-slate-400 uppercase">Composite Score</div>
+            <div className="text-[10px] font-mono text-slate-400 uppercase">Evidence Trust</div>
             <div className="text-sm font-mono font-bold text-emerald-400 mt-0.5">
-              {(candidate.finalScore * 100).toFixed(1)}%
+              {formatScore(candidate.finalScore)}
             </div>
           </div>
         </div>
@@ -154,14 +162,17 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
 
         <button
           onClick={() => onSelectEvidence(candidate)}
+          disabled={!canSelectEvidence}
           className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-medium transition-all cursor-pointer ${
-            isSelected
+            !canSelectEvidence
+              ? 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
+              : isSelected
               ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/50'
               : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/30'
           }`}
         >
           <Fingerprint className="w-3.5 h-3.5" />
-          <span>{isSelected ? '✓ Selected Evidence' : 'Select As Evidence'}</span>
+          <span>{!canSelectEvidence ? 'No reliable match' : isSelected ? '✓ Selected Evidence' : 'Select As Evidence'}</span>
         </button>
       </div>
     </div>

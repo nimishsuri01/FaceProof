@@ -12,25 +12,20 @@ export interface BlockchainConfig {
 /**
  * Blockchain Evidence Anchoring & Verification Service
  * Interacts with EVM Smart Contract (EvidenceRegistry.sol) via Ethers.js
- * or operates an internal cryptographic EVM ledger runner.
+ * Evidence is registered only when a real EVM RPC, signer, and contract are configured.
  */
 export class BlockchainService {
   private config: BlockchainConfig;
   private memoryLedger: Map<string, BlockchainRecord> = new Map();
-  private blockHeight: number = 1948270;
-  private walletAddress: string = '0x8f27A19D3B5e0987cB324e98f09C72C4119dBf41';
-  private contractAddress: string = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
 
   constructor() {
     this.config = {
       rpcUrl: process.env.BLOCKCHAIN_RPC_URL,
       privateKey: process.env.BLOCKCHAIN_PRIVATE_KEY,
-      contractAddress: process.env.CONTRACT_ADDRESS || this.contractAddress,
-      networkName: process.env.BLOCKCHAIN_RPC_URL ? 'EVM Testnet (Sepolia)' : 'Ethereum Sepolia (EVM Runner / Hardhat)'
+      contractAddress: process.env.CONTRACT_ADDRESS,
+      networkName: process.env.BLOCKCHAIN_RPC_URL ? 'Configured EVM Network' : 'Blockchain not configured'
     };
 
-    // Seed pre-existing forensic records
-    this.seedInitialLedger();
   }
 
   /**
@@ -76,9 +71,11 @@ export class BlockchainService {
       throw new Error('EvidenceAlreadyRegistered: This cryptographic fingerprint is already anchored on-chain.');
     }
 
-    // Real RPC interaction if configured
-    if (this.config.rpcUrl && this.config.privateKey && this.config.contractAddress) {
-      try {
+    if (!this.config.rpcUrl || !this.config.privateKey || !this.config.contractAddress) {
+      throw new Error('Blockchain is not configured. Set BLOCKCHAIN_RPC_URL, BLOCKCHAIN_PRIVATE_KEY, and CONTRACT_ADDRESS before anchoring evidence.');
+    }
+
+    try {
         const provider = new ethers.JsonRpcProvider(this.config.rpcUrl);
         const signer = new ethers.Wallet(this.config.privateKey, provider);
         const abi = [
@@ -107,33 +104,9 @@ export class BlockchainService {
 
         this.memoryLedger.set(evidenceHash.toLowerCase(), record);
         return record;
-      } catch (err: any) {
-        console.warn('Real testnet transaction failed, using internal cryptographic EVM ledger:', err.message);
-      }
+    } catch (err: any) {
+      throw new Error(`Blockchain registration failed: ${err.message}`);
     }
-
-    // High-fidelity internal EVM ledger execution with cryptographic proofs
-    this.blockHeight += 1;
-    const txHashBytes = crypto.createHash('sha256').update(`${evidenceHash}:${this.blockHeight}:${Date.now()}`).digest('hex');
-    const transactionHash = `0x${txHashBytes}`;
-
-    const record: BlockchainRecord = {
-      recordId: `rec_${Date.now()}`,
-      evidenceHash,
-      timestamp: Date.now(),
-      dateTimeStr: new Date().toISOString(),
-      sourceReference,
-      registeredBy: this.walletAddress,
-      transactionHash,
-      blockNumber: this.blockHeight,
-      gasUsed: 46820 + (parseInt(txHashBytes.slice(0, 3), 16) % 3500),
-      network: this.config.networkName,
-      status: 'VERIFIED',
-      contractAddress: this.contractAddress
-    };
-
-    this.memoryLedger.set(evidenceHash.toLowerCase(), record);
-    return record;
   }
 
   /**
@@ -190,29 +163,11 @@ export class BlockchainService {
   public getNetworkInfo() {
     return {
       network: this.config.networkName,
-      wallet: this.walletAddress,
-      contract: this.contractAddress,
-      latestBlock: this.blockHeight,
+      wallet: this.config.privateKey ? 'configured signer' : null,
+      contract: this.config.contractAddress || null,
+      latestBlock: null,
       totalRecords: this.memoryLedger.size
     };
   }
 
-  private seedInitialLedger() {
-    // Seed one verified historical investigation for judges to inspect right away
-    const sampleHash = '0xa91fc83d9a74e5025cb3f738de04112e47e8c15839b2512a865f80b271d441ae';
-    this.memoryLedger.set(sampleHash.toLowerCase(), {
-      recordId: 'rec_genesis_01',
-      evidenceHash: sampleHash,
-      timestamp: Date.now() - 3600000 * 24 * 3, // 3 days ago
-      dateTimeStr: new Date(Date.now() - 3600000 * 24 * 3).toISOString(),
-      sourceReference: 'https://globalnewswire.press/investigations/special-report-archive/img-84920.html',
-      registeredBy: this.walletAddress,
-      transactionHash: '0x7c49b109e20cb37452e8271a5391d1e4892c55b66d8b941584c0128b0f2a93ee',
-      blockNumber: 1948240,
-      gasUsed: 47210,
-      network: this.config.networkName,
-      status: 'VERIFIED',
-      contractAddress: this.contractAddress
-    });
-  }
 }

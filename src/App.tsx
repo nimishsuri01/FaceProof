@@ -97,17 +97,6 @@ export default function App() {
     setIsLoading(true);
     setPipelineStageIndex(0);
 
-    // Progressive stage animation timer
-    const interval = setInterval(() => {
-      setPipelineStageIndex(prev => {
-        if (prev >= 7) {
-          clearInterval(interval);
-          return prev;
-        }
-        return prev + 1;
-      });
-    }, 700);
-
     try {
       let res: Response;
       if (fileOrData instanceof File) {
@@ -127,7 +116,6 @@ export default function App() {
       }
 
       const data = await res.json().catch(() => null);
-      clearInterval(interval);
       setPipelineStageIndex(7);
 
       if (!res.ok || !data?.success) {
@@ -141,7 +129,6 @@ export default function App() {
         setActiveTab('search');
       }
     } catch (err) {
-      clearInterval(interval);
       throw err;
     } finally {
       setIsLoading(false);

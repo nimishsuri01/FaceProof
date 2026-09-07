@@ -45,16 +45,17 @@ export interface SearchCandidate {
   snippet: string;
   imageUrl: string;
   timestamp: string;
-  faceSimilarity: number;       // 0.00 - 1.00
-  imageSimilarity: number;      // 0.00 - 1.00
-  metadataScore: number;        // 0.00 - 1.00
-  sourceSignalScore: number;    // 0.00 - 1.00
-  finalScore: number;           // Weighted composite (0.00 - 1.00)
+  faceSimilarity: number | null;       // 0.00 - 1.00 when candidate face comparison succeeds
+  imageSimilarity: number | null;      // 0.00 - 1.00 when calculated
+  metadataScore: number | null;        // 0.00 - 1.00 when metadata is available
+  sourceSignalScore: number | null;    // 0.00 - 1.00 when source signal is available
+  finalScore: number | null;           // Weighted composite over available signals
   confidenceLabel: 'HIGH' | 'POTENTIAL' | 'LOW' | 'NO_MATCH';
   ranking: number;
   landmarks?: FaceLandmarks;
   metadata: Record<string, string | number>;
   scoringRationale: string[];
+  candidateStatus?: 'ANALYZED' | 'IMAGE_UNAVAILABLE' | 'ANALYSIS_FAILED';
 }
 
 export interface CanonicalEvidencePackage {
@@ -104,6 +105,9 @@ export interface Investigation {
   faceAnalysis: FaceAnalysisResult;
   searchMode: 'LIVE' | 'DEMO';
   searchProviderName: string;
+  searchId?: string;
+  searchTimestamp?: string;
+  searchResponseMetadata?: Record<string, unknown>;
   candidates: SearchCandidate[];
   selectedCandidateId?: string;
   evidencePackage?: CanonicalEvidencePackage;

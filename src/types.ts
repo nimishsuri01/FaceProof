@@ -41,15 +41,16 @@ export interface SearchCandidate {
   snippet: string;
   imageUrl: string;
   timestamp: string;
-  faceSimilarity: number;
-  imageSimilarity: number;
-  metadataScore: number;
-  sourceSignalScore: number;
-  finalScore: number;
+  faceSimilarity: number | null;
+  imageSimilarity: number | null;
+  metadataScore: number | null;
+  sourceSignalScore: number | null;
+  finalScore: number | null;
   confidenceLabel: 'HIGH' | 'POTENTIAL' | 'LOW' | 'NO_MATCH';
   ranking: number;
   metadata: Record<string, string | number>;
   scoringRationale: string[];
+  candidateStatus?: 'ANALYZED' | 'IMAGE_UNAVAILABLE' | 'ANALYSIS_FAILED';
 }
 
 export interface CanonicalEvidencePackage {
@@ -99,6 +100,9 @@ export interface Investigation {
   faceAnalysis: FaceAnalysisResult;
   searchMode: 'LIVE' | 'DEMO';
   searchProviderName: string;
+  searchId?: string;
+  searchTimestamp?: string;
+  searchResponseMetadata?: Record<string, unknown>;
   candidates: SearchCandidate[];
   selectedCandidateId?: string;
   evidencePackage?: CanonicalEvidencePackage;

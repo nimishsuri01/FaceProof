@@ -27,6 +27,7 @@ export const SearchEvidencePage: React.FC<SearchEvidencePageProps> = ({
 }) => {
   const [filterConfidence, setFilterConfidence] = useState<string>('ALL');
   const [comparingCandidate, setComparingCandidate] = useState<SearchCandidate | null>(null);
+  const [showResponseMetadata, setShowResponseMetadata] = useState(false);
 
   if (!currentInvestigation) {
     return (
@@ -55,6 +56,8 @@ export const SearchEvidencePage: React.FC<SearchEvidencePageProps> = ({
     if (filterConfidence === 'ALL') return true;
     return c.confidenceLabel === filterConfidence;
   });
+
+  const topSimilarity = candidates[0]?.faceSimilarity;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -89,10 +92,33 @@ export const SearchEvidencePage: React.FC<SearchEvidencePageProps> = ({
             <div className="px-3 py-1.5 rounded-xl bg-[#050816] border border-blue-900/40">
               <span className="text-slate-400">Top Similarity: </span>
               <strong className="text-emerald-400">
-                {candidates.length > 0 ? `${(candidates[0].faceSimilarity * 100).toFixed(1)}%` : '0%'}
+                {topSimilarity === null || topSimilarity === undefined ? 'Not available' : `${(topSimilarity * 100).toFixed(1)}%`}
               </strong>
             </div>
           </div>
+        </div>
+
+        <div className="rounded-2xl border border-cyan-500/20 bg-cyan-950/10 p-4 grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs font-mono">
+          <div><span className="text-slate-500 block">Search ID</span><span className="text-cyan-300 break-all">{currentInvestigation.searchId || 'Not available'}</span></div>
+          <div><span className="text-slate-500 block">Search timestamp</span><span className="text-slate-300">{currentInvestigation.searchTimestamp ? new Date(currentInvestigation.searchTimestamp).toLocaleString() : 'Not available'}</span></div>
+          <div><span className="text-slate-500 block">Candidates retrieved</span><span className="text-slate-300">{candidates.length}</span></div>
+          <div><span className="text-slate-500 block">Processing time</span><span className="text-slate-300">{currentInvestigation.timeline.find(event => event.stage === 'Web Discovery')?.durationMs ?? 'Not available'} ms</span></div>
+        </div>
+
+        <div className="rounded-2xl border border-blue-900/30 bg-[#050816]/70 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowResponseMetadata(previous => !previous)}
+            className="w-full px-4 py-3 flex items-center justify-between text-xs font-mono text-slate-300 hover:text-cyan-300 cursor-pointer"
+          >
+            <span>VIEW SEARCH RESPONSE METADATA</span>
+            <span>{showResponseMetadata ? 'Hide' : 'Show'}</span>
+          </button>
+          {showResponseMetadata && (
+            <pre className="border-t border-blue-900/30 p-4 overflow-x-auto text-[11px] leading-relaxed text-cyan-200 whitespace-pre-wrap">
+              {JSON.stringify(currentInvestigation.searchResponseMetadata || {}, null, 2)}
+            </pre>
+          )}
         </div>
 
         {/* Filters */}
@@ -139,6 +165,13 @@ export const SearchEvidencePage: React.FC<SearchEvidencePageProps> = ({
         <div className="p-12 text-center rounded-3xl bg-[#080D1F]/50 border border-dashed border-blue-900/40 text-xs font-mono text-slate-500 space-y-2">
           <AlertCircle className="w-6 h-6 text-slate-400 mx-auto" />
           <p>No candidates match the selected filter criteria.</p>
+        </div>
+      )}
+
+      {candidates.length > 0 && candidates.every(candidate => candidate.finalScore === null || candidate.confidenceLabel === 'NO_MATCH') && (
+        <div className="rounded-2xl border border-amber-500/40 bg-amber-950/20 p-5 text-sm text-amber-200">
+          <strong className="font-mono block mb-1">NO RELIABLE MATCH</strong>
+          <span>Search results were retrieved, but no candidate completed a qualifying face comparison. No evidence can be registered.</span>
         </div>
       )}
 

@@ -141,7 +141,7 @@ export const VerificationPage: React.FC<VerificationPageProps> = ({
                   {isTampered ? 'INTEGRITY BREACH DETECTED' : 'CRYPTOGRAPHICALLY VERIFIED'}
                 </span>
                 <span className="text-xs font-mono text-slate-400">
-                  Block #{currentInvestigation.blockchainRecord?.blockNumber || 1948240}
+                  {currentInvestigation.blockchainRecord?.blockNumber ? `Block #${currentInvestigation.blockchainRecord.blockNumber}` : 'Blockchain registration pending'}
                 </span>
               </div>
 
@@ -220,7 +220,9 @@ export const VerificationPage: React.FC<VerificationPageProps> = ({
           </div>
 
           <div className="text-[11px] text-slate-400">
-            Permanently registered in EVM block height #{currentInvestigation.blockchainRecord?.blockNumber || 1948240}. Immutable.
+            {currentInvestigation.blockchainRecord?.blockNumber
+              ? `Permanently registered in EVM block height #${currentInvestigation.blockchainRecord.blockNumber}. Immutable.`
+              : 'Evidence has not yet been registered on a configured blockchain.'}
           </div>
         </div>
       </div>
