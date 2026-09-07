@@ -16,7 +16,8 @@ function ensureFaceService() {
     })
     .catch(() => {
       console.log('[FaceProof] Spawning Python FastAPI + InsightFace service on :8001...');
-      const py = spawn('python3', [path.join(__dirname, 'server/face_service.py')], {
+      const pythonCommand = process.platform === 'win32' ? 'py' : 'python3';
+      const py = spawn(pythonCommand, [path.join(__dirname, 'server/face_service.py')], {
         stdio: 'inherit'
       });
       py.on('error', (err) => console.error('[FaceProof] Failed to spawn Python face service:', err));

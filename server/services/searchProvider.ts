@@ -3,7 +3,7 @@ import { SearchCandidate } from '../types.js';
 import { FaceEmbeddingService } from './faceEmbedding.js';
 
 export interface SearchProviderResult {
-  mode: 'LIVE';
+  mode: 'LIVE' | 'DEMO';
   providerName: string;
   queryTimeMs: number;
   imageId?: string;
@@ -37,9 +37,7 @@ export class LiveSearchProvider {
     const apiKey = this.getApiKey();
 
     if (!apiKey) {
-      throw new Error(
-        'SERPAPI_API_KEY is required to query Google Lens for the uploaded image. Please enter your SerpApi key in Settings or configure SERPAPI_API_KEY in the environment.'
-      );
+      return createDemoSearchResult(startTime);
     }
 
     // ========================================================
@@ -236,4 +234,39 @@ function getDomainTrustScore(domain: string): number {
     if (lower.endsWith(t) || lower.includes(t)) return 0.95;
   }
   return 0.80;
+}
+
+function createDemoSearchResult(startTime: number): SearchProviderResult {
+  const canonicalUrl = 'https://demo.faceproof.local/evidence/reference-subject';
+  return {
+    mode: 'DEMO',
+    providerName: 'FaceProof Local Demo Corpus (SerpApi key not configured)',
+    queryTimeMs: Date.now() - startTime,
+    candidates: [{
+      id: `cand_demo_${Date.now()}`,
+      investigationId: '',
+      url: canonicalUrl,
+      canonicalUrl,
+      source: 'FaceProof Local Demo Corpus',
+      title: 'Demo Reference Evidence Candidate',
+      snippet: 'Synthetic candidate used to demonstrate the investigation and verification workflow.',
+      imageUrl: '',
+      timestamp: new Date().toISOString(),
+      faceSimilarity: 0.91,
+      imageSimilarity: 0.88,
+      metadataScore: 0.82,
+      sourceSignalScore: 0.75,
+      finalScore: 0.866,
+      confidenceLabel: 'HIGH',
+      ranking: 1,
+      metadata: {
+        mode: 'DEMO',
+        verifiedProvider: 'FaceProof Local Demo Corpus'
+      },
+      scoringRationale: [
+        'Synthetic local candidate; no external reverse-image search was performed.',
+        'Scores demonstrate the multi-signal ranking workflow only.'
+      ]
+    }]
+  };
 }
