@@ -65,12 +65,12 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
             </button>
 
             <button
-              id="btn-overview-demo"
-              onClick={onRunDemoInvestigation}
+              id="btn-upload-evidence"
+              onClick={() => setActiveTab('new_investigation')}
               className="flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-slate-900/80 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40 font-mono text-xs font-semibold shadow-md transition-all cursor-pointer"
             >
               <Sparkles className="w-4 h-4 text-cyan-400" />
-              <span>Load Genesis Demo Investigation</span>
+              <span>Upload Subject Evidence</span>
             </button>
           </div>
         </div>
