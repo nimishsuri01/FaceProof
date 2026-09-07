@@ -93,7 +93,7 @@ export default function App() {
   };
 
   // Start New Investigation
-  const handleStartInvestigation = async (imageData: string, title: string, scenario?: string) => {
+  const handleStartInvestigation = async (fileOrData: File | string, title: string) => {
     setIsLoading(true);
     setPipelineStageIndex(0);
 
@@ -106,20 +106,33 @@ export default function App() {
         }
         return prev + 1;
       });
-    }, 450);
+    }, 700);
 
     try {
-      const res = await fetch('/api/investigations/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: imageData, title, scenario })
-      });
+      let res: Response;
+      if (fileOrData instanceof File) {
+        const formData = new FormData();
+        formData.append('image', fileOrData);
+        formData.append('title', title);
+        res = await fetch('/api/investigations', {
+          method: 'POST',
+          body: formData
+        });
+      } else {
+        res = await fetch('/api/investigations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: fileOrData, title })
+        });
+      }
 
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
       clearInterval(interval);
+      setPipelineStageIndex(7);
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Investigation failed');
+      if (!res.ok || !data?.success) {
+        const msg = data?.error?.message || data?.error || `Investigation failed (HTTP ${res.status})`;
+        throw new Error(msg);
       }
 
       if (data.investigation) {

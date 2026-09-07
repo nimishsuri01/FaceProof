@@ -1,15 +1,33 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { spawn } from 'child_process';
 import { createServer as createViteServer } from 'vite';
 import { createApiRouter } from './server/routes/api.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function ensureFaceService() {
+  fetch('http://127.0.0.1:8001/health')
+    .then((res) => {
+      if (res.ok) console.log('[FaceProof] FastAPI Biometric Intelligence service is active on :8001');
+      else throw new Error('Not ok');
+    })
+    .catch(() => {
+      console.log('[FaceProof] Spawning Python FastAPI + InsightFace service on :8001...');
+      const py = spawn('python3', [path.join(__dirname, 'server/face_service.py')], {
+        stdio: 'inherit'
+      });
+      py.on('error', (err) => console.error('[FaceProof] Failed to spawn Python face service:', err));
+    });
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  ensureFaceService();
 
   // JSON payload parser with capacity for base64 image data
   app.use(express.json({ limit: '25mb' }));
