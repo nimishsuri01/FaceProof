@@ -25,6 +25,7 @@ export const FaceComparisonModal: React.FC<FaceComparisonModalProps> = ({
   onClose,
   onSelectAsEvidence
 }) => {
+  const formatScore = (value: number | null) => value === null ? 'Not available' : `${(value * 100).toFixed(1)}%`;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
       <div 
@@ -89,7 +90,7 @@ export const FaceComparisonModal: React.FC<FaceComparisonModalProps> = ({
                   Discovered Candidate #{candidate.ranking}
                 </span>
                 <span className="text-[11px] font-mono text-emerald-400 font-bold">
-                  {(candidate.faceSimilarity * 100).toFixed(1)}% Match
+                  {formatScore(candidate.faceSimilarity)} Match
                 </span>
               </div>
               <FaceLandmarkOverlay
@@ -113,7 +114,7 @@ export const FaceComparisonModal: React.FC<FaceComparisonModalProps> = ({
                 Transparent Multi-Signal Scoring Engine
               </h4>
               <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-500/30">
-                Confidence: {candidate.confidenceLabel} ({(candidate.finalScore * 100).toFixed(1)}%)
+                Confidence: {candidate.confidenceLabel} ({formatScore(candidate.finalScore)})
               </span>
             </div>
 
@@ -123,7 +124,7 @@ export const FaceComparisonModal: React.FC<FaceComparisonModalProps> = ({
               <div>
                 <div className="flex justify-between text-slate-300 mb-1 text-[11px]">
                   <span>Biometric Facial Cosine Similarity (Weight 45%)</span>
-                  <span className="text-cyan-300 font-bold">{(candidate.faceSimilarity * 100).toFixed(1)}%</span>
+                  <span className="text-cyan-300 font-bold">{formatScore(candidate.faceSimilarity)}</span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-slate-900 overflow-hidden">
                   <div 
@@ -137,7 +138,7 @@ export const FaceComparisonModal: React.FC<FaceComparisonModalProps> = ({
               <div>
                 <div className="flex justify-between text-slate-300 mb-1 text-[11px]">
                   <span>Structural Image Consistency (Weight 30%)</span>
-                  <span className="text-blue-300 font-bold">{(candidate.imageSimilarity * 100).toFixed(1)}%</span>
+                  <span className="text-blue-300 font-bold">{formatScore(candidate.imageSimilarity)}</span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-slate-900 overflow-hidden">
                   <div 
@@ -151,7 +152,7 @@ export const FaceComparisonModal: React.FC<FaceComparisonModalProps> = ({
               <div>
                 <div className="flex justify-between text-slate-300 mb-1 text-[11px]">
                   <span>Metadata & Temporal Consistency (Weight 15%)</span>
-                  <span className="text-amber-300 font-bold">{(candidate.metadataScore * 100).toFixed(1)}%</span>
+                  <span className="text-amber-300 font-bold">{formatScore(candidate.metadataScore)}</span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-slate-900 overflow-hidden">
                   <div 
@@ -165,7 +166,7 @@ export const FaceComparisonModal: React.FC<FaceComparisonModalProps> = ({
               <div>
                 <div className="flex justify-between text-slate-300 mb-1 text-[11px]">
                   <span>Source Platform Credibility (Weight 10%)</span>
-                  <span className="text-purple-300 font-bold">{(candidate.sourceSignalScore * 100).toFixed(1)}%</span>
+                  <span className="text-purple-300 font-bold">{formatScore(candidate.sourceSignalScore)}</span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-slate-900 overflow-hidden">
                   <div 

@@ -151,7 +151,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       {topCandidate ? (
                         <span className="text-emerald-400 font-bold">
-                          {(topCandidate.faceSimilarity * 100).toFixed(1)}% ({topCandidate.confidenceLabel})
+                          {topCandidate.faceSimilarity === null ? 'Not available' : `${(topCandidate.faceSimilarity * 100).toFixed(1)}%`} ({topCandidate.confidenceLabel})
                         </span>
                       ) : (
                         <span className="text-slate-500">None</span>

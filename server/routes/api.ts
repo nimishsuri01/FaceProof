@@ -240,7 +240,9 @@ export function createApiRouter(): Router {
       status: 'completed',
       description:
         candidates.length > 0
-          ? `Top candidate biometric correlation: ${(candidates[0].faceSimilarity * 100).toFixed(1)}%`
+          ? candidates[0].faceSimilarity === null
+            ? 'Top candidate biometric correlation was unavailable.'
+            : `Top candidate biometric correlation: ${(candidates[0].faceSimilarity * 100).toFixed(1)}%`
           : '0 candidates discovered on Google Lens for the uploaded facial image.',
       durationMs: 140
     });
