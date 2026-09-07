@@ -1,0 +1,6 @@
+{
+  "name": "FaceProof",
+  "description": "AI-Powered Face Evidence Discovery & Blockchain Verification with cryptographic fingerprinting, genuine reverse-search intelligence, and immutable provenance.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
