@@ -320,7 +320,7 @@ export default function App() {
               />
             )}
 
-            {activeTab === 'comparison' && (
+            {activeTab === 'matches' && (
               <MatchesComparisonPage
                 currentInvestigation={currentInvestigation}
                 onSelectAsEvidence={handleSelectAsEvidence}
